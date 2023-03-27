@@ -4,17 +4,18 @@ import android.content.ContentValues.TAG
 import android.graphics.Color
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
-import android.provider.Settings.Global
 import android.text.Editable
 import android.text.TextWatcher
 import android.util.Log
-import android.view.Display
 import android.widget.*
-import androidx.core.widget.addTextChangedListener
+import androidx.lifecycle.ViewModelProvider
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), SeekBar.OnSeekBarChangeListener{
     var States= arrayOf(false,false,false)
 
     lateinit var rswitch: Switch
@@ -29,19 +30,30 @@ class MainActivity : AppCompatActivity() {
     lateinit var displayColor: TextView
     lateinit var reset: Button
     var BoxColor= arrayOf(0,0,0)
+    private lateinit var myViewModel: MyViewModel
 
-    private val MyViewModel: MyViewModel by lazy {
-        MyPrefRepo.initialize(this)
-        MyViewModel()
-    }
+    @OptIn(DelicateCoroutinesApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         connectViews()
         setupListeners()
-        MyViewModel.loadUIValues(this)
+        MyPrefRepo.initialize(this)
+        myViewModel = ViewModelProvider(this)[MyViewModel::class.java]
+        myViewModel.loadUIValues(this)
+        GlobalScope.launch() {
+            collectFLows()
+        }
+
 
 //        MyViewModel.setSwitchUI(this)
+    }
+
+    private suspend fun collectFLows(){
+
+        myViewModel.bcolor.collectLatest {
+            bseekbar.progress = it
+        }
     }
     // SET UP CONNECT VIEWS
     private fun connectViews() {
@@ -59,22 +71,22 @@ class MainActivity : AppCompatActivity() {
     }
     //SET UP LISTENERS
     private fun setupListeners() {
-        gseekbar.setOnSeekBarChangeListener(SBlistener("green"))
+        gseekbar.setOnSeekBarChangeListener(this)
         geditview.addTextChangedListener(ETlistener("green"))
-        rseekbar.setOnSeekBarChangeListener(SBlistener("red"))
+        rseekbar.setOnSeekBarChangeListener(this)
         reditview.addTextChangedListener(ETlistener("red"))
-        bseekbar.setOnSeekBarChangeListener(SBlistener("blue"))
+        bseekbar.setOnSeekBarChangeListener(this)
         beditview.addTextChangedListener(ETlistener("blue"))
         SWlistener(rswitch,"red")
         SWlistener(gswitch, "green")
         SWlistener(bswitch,"blue")
         reset.setOnClickListener {
-            MyViewModel.saveColor(0,"red")
-            MyViewModel.saveColor(0,"green")
-            MyViewModel.saveColor(0,"blue")
-            MyViewModel.saveSwitch(false,"red")
-            MyViewModel.saveSwitch(false,"green")
-            MyViewModel.saveSwitch(false,"blue")
+            myViewModel.saveColor(0,"red")
+            myViewModel.saveColor(0,"green")
+            myViewModel.saveColor(0,"blue")
+            myViewModel.saveSwitch(false,"red")
+            myViewModel.saveSwitch(false,"green")
+            myViewModel.saveSwitch(false,"blue")
         }
 
 
@@ -84,7 +96,7 @@ class MainActivity : AppCompatActivity() {
 
     fun SWlistener(SW:Switch,clr:String){
         SW.setOnCheckedChangeListener {  buttonView, isChecked ->
-            MyViewModel.saveSwitch(isChecked,clr)
+            myViewModel.saveSwitch(isChecked,clr)
             when(clr){
                 "red"-> States[0]=isChecked
                 "green"-> States[1]=isChecked
@@ -106,10 +118,10 @@ class MainActivity : AppCompatActivity() {
                         val duration = Toast.LENGTH_SHORT // or Toast.LENGTH_LONG
                         val toast = Toast.makeText(applicationContext, message, duration)
                         toast.show()
-                        MyViewModel.saveColor(255,clr)
+                        myViewModel.saveColor(255,clr)
                     }
                     else{
-                        MyViewModel.saveColor((ColorValue*255).toInt(),clr)
+                        myViewModel.saveColor((ColorValue*255).toInt(),clr)
                     }
                         updateColor()
                     }
@@ -161,7 +173,7 @@ class MainActivity : AppCompatActivity() {
     fun SBlistener(clr:String):SeekBar.OnSeekBarChangeListener{
         var mySeekbarListener:SeekBar.OnSeekBarChangeListener = object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar, i: Int, b: Boolean) {
-                MyViewModel.saveColor(i,clr)
+                myViewModel.saveColor(i,clr)
                 when(clr){
                     "red"->BoxColor[0]=i
                     "green"->BoxColor[1]=i
@@ -177,8 +189,33 @@ class MainActivity : AppCompatActivity() {
         return mySeekbarListener
     }
 
+    override fun onProgressChanged(seekBar: SeekBar?, i: Int, fromUser: Boolean) {
+        seekBar?.let {
+            seekBar.setOnSeekBarChangeListener(null)
+            val tag = it.tag.toString()
+            when(tag){
+                "red"->{
+                    BoxColor[0]=i
+                }
+                "green"->BoxColor[1]=i
+                "blue"->BoxColor[2]=i
+            }
+            myViewModel.saveColor(i,tag)
+            updateColor()
+        }
 
     }
+
+    override fun onStartTrackingTouch(seekBar: SeekBar?) {
+
+    }
+
+    override fun onStopTrackingTouch(seekBar: SeekBar?) {
+        seekBar?.setOnSeekBarChangeListener(this@MainActivity)
+    }
+
+
+}
 
 
 

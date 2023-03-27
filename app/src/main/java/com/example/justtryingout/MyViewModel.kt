@@ -7,9 +7,7 @@ import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 const val LOG_TAG="Just Fucking Logging"
 
@@ -18,6 +16,9 @@ class MyViewModel:ViewModel() {
     private val prefs = MyPrefRepo.get()
     private val BoxColors = IntArray(3)
     private val States = IntArray(3)
+
+    private val _bcolor = MutableSharedFlow<Int>()
+    val bcolor = _bcolor.asSharedFlow()
 
     fun saveColor(i: Int, clr: String) {
         viewModelScope.launch {
@@ -96,8 +97,8 @@ class MyViewModel:ViewModel() {
         }
         viewModelScope.launch {
             prefs.gcolor.collectLatest {
-                act.gseekbar.setProgress(it)
-                act.geditview.setText(String.format("%.2f", (it.toDouble() / 255.toDouble())))
+                _bcolor.emit(it)
+//                act.geditview.setText(String.format("%.2f", (it.toDouble() / 255.toDouble())))
             }
         }
 

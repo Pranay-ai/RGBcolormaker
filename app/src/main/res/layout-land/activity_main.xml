@@ -74,7 +74,9 @@
         app:layout_constraintEnd_toStartOf="@+id/guideline7"
         app:layout_constraintStart_toStartOf="@+id/guideline3"
         app:layout_constraintTop_toBottomOf="@+id/guideline5"
-        app:layout_constraintWidth_percent="0.13" />
+        app:layout_constraintWidth_percent="0.13"
+        android:tag="red"
+        />
 
     <SeekBar
         android:id="@+id/sb_green"
@@ -88,7 +90,8 @@
         app:layout_constraintEnd_toStartOf="@+id/guideline7"
         app:layout_constraintStart_toStartOf="@+id/guideline3"
         app:layout_constraintTop_toBottomOf="@id/sb_red"
-        app:layout_constraintWidth_percent="0.13" />
+        app:layout_constraintWidth_percent="0.13"
+        android:tag="green"/>
 
     <SeekBar
         android:id="@+id/sb_blue"
@@ -102,7 +105,8 @@
         app:layout_constraintEnd_toStartOf="@+id/guideline7"
         app:layout_constraintStart_toStartOf="@+id/guideline3"
         app:layout_constraintTop_toBottomOf="@+id/sb_green"
-        app:layout_constraintWidth_percent="0.13" />
+        app:layout_constraintWidth_percent="0.13"
+        android:tag="blue"/>
 
     <Switch
         android:id="@+id/sw_red"
